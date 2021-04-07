@@ -98,7 +98,6 @@ function makeid(length) {
 }
 
 function GenerateInformation(player,itemid,itemdata) {
-    console.log(itemdata)
     let data = Object.assign({}, itemdata);
     let returnInfo = "{}"
     return new Promise((resolve, reject) => {
@@ -233,6 +232,10 @@ function GenerateInformation(player,itemid,itemdata) {
         exports.ghmattimysql.execute(string,{}, function(inventory) {
             if (!inventory){}else{
             var invArray = inventory;
+			for (let i = 0; i < invArray.length; i++) { 
+			let quality = ConvertQuality(invArray[i].item_id,invArray[i].creationDate)
+			invArray[i].quality = quality;
+			}
             var arrayCount = 0;
        		var playerinvname = player
             emitNet("inventory-update-player", src, [invArray,arrayCount,playerinvname]);
@@ -276,9 +279,11 @@ function GenerateInformation(player,itemid,itemdata) {
             var invArray = inventory;
             var i;
             var arrayCount = 0;
-    
+			for (let x = 0; x < invArray.length; x++) { 
+			let quality = ConvertQuality(invArray[x].item_id,invArray[x].creationDate)
+			invArray[x].quality = quality;
+			}
                InUseInventories[playerinvname] = player;
-     
                emitNet('current-items', src, invArray)
                
                if(secondInventory == "1") {
@@ -863,6 +868,19 @@ function deleteHidden() {
 
 function deleteHiddenHandler() {
     setTimeout(250000, deleteHidden())
+}
+
+// const TimeAllowed = 1000 * 60 * 40320; // 28 days, 
+function ConvertQuality(itemID,creationDate) {
+
+    let StartDate = new Date(creationDate).getTime()
+    let DecayRate = itemList[itemID].decayrate
+    let TimeExtra = (TimeAllowed * DecayRate)
+    let percentDone = 100 - Math.ceil((((Date.now() - StartDate) / TimeExtra) * 100))
+
+    if (DecayRate == 0.0) { percentDone = 100 }
+    if (percentDone < 0) { percentDone = 0 }
+    return percentDone
 }
 
 RegisterServerEvent('stores:pay:cycle')
